@@ -1,5 +1,4 @@
 #![feature(
-    concat_idents,
     proc_macro_hygiene
 )]
 #![allow(
@@ -20,18 +19,47 @@ use smash::lib::lua_const::*;
 mod bomb;
 
 pub static mut MARKED_COLORS: [bool; 256] = [false; 256];
-
+pub static mut MARKED_SLOTS: Vec<i32> = Vec::new();
 
 extern "C" fn mods_mounted(_ev: arcropolis_api::Event) {
-    let lowest_color: i32 = 24;
-    let color_num: i32 = 8;
-    let marked_slots: Vec<i32> = (24..=31).collect();
+    const FIGHTER_NAME: &str = "purin";
+    const MARKER_FILE: &str = "bomb.marker";
 
-    unsafe {
-        for slot in &marked_slots {
-            MARKED_COLORS[*slot as usize] = true;
+    let mut lowest_color: i32 = -1;
+    let mut marked_slots: Vec<i32> = vec![];
+
+    for x in 0..256 {
+        if std::fs::read(format!(
+            "mods:/fighter/{}/model/body/c{:02}/{}", FIGHTER_NAME, x, MARKER_FILE
+        )).is_ok() {
+            unsafe {
+                marked_slots.push(x as _);
+                MARKED_COLORS[x as usize] = true;
+                if lowest_color == -1 {
+                    lowest_color = x as _;
+                }
+            }
         }
     }
+
+    if lowest_color == -1 {
+        return;
+    }
+
+    unsafe {
+        MARKED_SLOTS = marked_slots.clone();
+    }
+
+    let color_num = {
+        unsafe {
+            let mut index = lowest_color;
+            while index < 256 && MARKED_COLORS[index as usize] {
+                index += 1;
+            }
+            (index - lowest_color) as u8
+        }
+    };
+
 
     update_float_2(*FIGHTER_KIND_PURIN, marked_slots.clone(), (hash40("walk_accel_mul"), 0, 0.168));
     update_float_2(*FIGHTER_KIND_PURIN, marked_slots.clone(), (hash40("walk_accel_add"), 0, 0.105));
@@ -76,7 +104,6 @@ extern "C" fn mods_mounted(_ev: arcropolis_api::Event) {
     update_float_2(*FIGHTER_KIND_PURIN, marked_slots.clone(), (hash40("shield_radius"), 0, 16.0));
 
 
-
     add_narration_characall_entry("vc_narration_characall_bomb");
     add_chara_db_entry_info(CharacterDatabaseEntry{
         ui_chara_id: hash40("ui_chara_bomb"),
@@ -95,7 +122,7 @@ extern "C" fn mods_mounted(_ev: arcropolis_api::Event) {
         is_called_pokemon: BoolType::Overwrite(false),
         is_dlc:BoolType::Overwrite(false),
         is_patch: BoolType::Overwrite(false),
-        color_num: UnsignedByteType::Overwrite(color_num as u8),
+        color_num: UnsignedByteType::Overwrite(color_num as u8), 
         extra_index_maps: UnsignedByteMap::Overwrite(HashMap::from([
             (hash40("color_start_index"), UnsignedByteType::Overwrite(lowest_color as u8)),
             (hash40("original_ui_chara_id"), UnsignedByteType::Overwrite(hash40("ui_chara_purin") as u8))
@@ -219,10 +246,14 @@ extern "C" fn mods_mounted(_ev: arcropolis_api::Event) {
     });
 }
 
+pub fn bomb_slots() -> Vec<usize> {
+    unsafe { (&raw const MARKED_SLOTS).as_ref().unwrap().iter().map(|&x| x as usize).collect() }
+}
+
 #[skyline::main(name = "smashline_test")]
 pub fn main() {
     unsafe {
-        extern "C" {
+        unsafe extern "C" {
             fn arcrop_register_event_callback(
                 ty: arcropolis_api::Event,
                 callback: arcropolis_api::EventCallbackFn,

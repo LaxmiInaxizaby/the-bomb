@@ -10,6 +10,8 @@ use {
     smashline::*
 };
 
+use crate::MARKED_COLORS;
+
 unsafe extern "C" fn game_smashattack(agent: &mut L2CAgentBase) {
     frame(agent.lua_state_agent, 8.0);
     if macros::is_excute(agent) {
@@ -237,9 +239,32 @@ unsafe extern "C" fn game_throwf(agent: &mut L2CAgentBase) {
     }
 }
 
+unsafe extern "C" fn game_attackairf(agent: &mut L2CAgentBase) {
+    frame(agent.lua_state_agent, 8.0);
+    if macros::is_excute(agent) {
+        macros::ATTACK(agent, 0, 0, Hash40::new("headdress"), 20.0, 315, 78, 0, 32, 4.6, 3.4, 0.0, 0.0, None, None, None, 1.0, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_F, false, 0, 0.0, 0, false, false, false, false, true, *COLLISION_SITUATION_MASK_A, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_fire"), *ATTACK_SOUND_LEVEL_L, *COLLISION_SOUND_ATTR_CUTUP, *ATTACK_REGION_PUNCH);
+		macros::ATTACK(agent, 1, 0, Hash40::new("headdress"), 20.0, 361, 78, 0, 32, 4.6, 3.4, 0.0, 0.0, None, None, None, 1.0, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_F, false, 0, 0.0, 0, false, false, false, false, true, *COLLISION_SITUATION_MASK_G, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_fire"), *ATTACK_SOUND_LEVEL_L, *COLLISION_SOUND_ATTR_CUTUP, *ATTACK_REGION_PUNCH);
+    }
+    frame(agent.lua_state_agent, 12.0);
+    if macros::is_excute(agent) {
+        AttackModule::clear_all(agent.module_accessor);
+    }
+}
+
+unsafe extern "C" fn effect_attackairf(agent: &mut L2CAgentBase) {
+}
+
+unsafe extern "C" fn sound_attackairf(agent: &mut L2CAgentBase) {
+    frame(agent.lua_state_agent, 8.0);
+    if macros::is_excute(agent) {
+        macros::PLAY_SEQUENCE(agent, Hash40::new("seq_purin_rnd_attack02"));
+        macros::PLAY_SE(agent, Hash40::new("se_purin_swing_l"));
+    }
+}
+
 pub fn install() {
     Agent::new("purin")
-	.set_costume([24, 25, 26, 27, 28, 29, 30, 31].to_vec())
+	.set_costume(crate::bomb_slots())
 		.game_acmd("game_attack11", game_normalattack, Priority::Default)
 		.game_acmd("game_attack12", game_normalattack, Priority::Default)
 		.game_acmd("game_attacklw3", game_normalattack, Priority::Default)
@@ -252,7 +277,7 @@ pub fn install() {
 		.game_acmd("game_attackhi4", game_smashattack, Priority::Default)
 		.game_acmd("game_attackairn", game_aerialattack, Priority::Default)
 		.game_acmd("game_attackairlw", game_aerialattack, Priority::Default)
-		.game_acmd("game_attackairf", game_aerialattack, Priority::Default)
+		.game_acmd("game_attackairf", game_attackairf, Priority::Default)
 		.game_acmd("game_attackairb", game_aerialattack, Priority::Default)
 		.game_acmd("game_attackairhi", game_aerialattack, Priority::Default)
 		.game_acmd("game_landingairn", game_landingattack, Priority::Default)
@@ -288,7 +313,7 @@ pub fn install() {
 		.effect_acmd("effect_attackhi4", effect_smashattack, Priority::Default)
 		.effect_acmd("effect_attackairn", effect_normalattack, Priority::Default)
 		.effect_acmd("effect_attackairlw", effect_normalattack, Priority::Default)
-		.effect_acmd("effect_attackairf", effect_normalattack, Priority::Default)
+		.effect_acmd("effect_attackairf", effect_attackairf, Priority::Default)
 		.effect_acmd("effect_attackairb", effect_normalattack, Priority::Default)
 		.effect_acmd("effect_attackairhi", effect_normalattack, Priority::Default)
 		.effect_acmd("effect_specials", effect_normalattack, Priority::Default)
@@ -314,7 +339,7 @@ pub fn install() {
 		.sound_acmd("sound_attackhi4", sound_smashattack, Priority::Default)
 		.sound_acmd("sound_attackairn", sound_normalattack, Priority::Default)
 		.sound_acmd("sound_attackairlw", sound_normalattack, Priority::Default)
-		.sound_acmd("sound_attackairf", sound_normalattack, Priority::Default)
+		.sound_acmd("sound_attackairf", sound_attackairf, Priority::Default)
 		.sound_acmd("sound_attackairb", sound_normalattack, Priority::Default)
 		.sound_acmd("sound_attackairhi", sound_normalattack, Priority::Default)
 		.sound_acmd("sound_specials", sound_normalattack, Priority::Default)
